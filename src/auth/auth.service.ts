@@ -1,5 +1,5 @@
 
-import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
@@ -9,6 +9,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 
 import { User } from './entities/user.entity';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
@@ -41,6 +42,27 @@ export class AuthService {
       }
       
     }
+  }
+
+  async login(loginDto: LoginDto) {
+    const {password, email} = loginDto
+
+    const user = await this.userModel.findOne({email});
+    if(!user) {
+      throw new UnauthorizedException(`Not valid credentials - email`)
+    }
+
+    if(!bcryptjs.compareSync(password, user.password)) {
+      throw new UnauthorizedException(`Not valid credentials - password`)
+    }
+
+    const {password: _, ...userResp} = user.toJSON();
+
+    return {
+      user: userResp,
+      token: 'ABC-123'
+    };
+
   }
 
   findAll() {
