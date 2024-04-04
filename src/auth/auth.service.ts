@@ -10,13 +10,17 @@ import { UpdateAuthDto } from './dto/update-auth.dto';
 
 import { User } from './entities/user.entity';
 import { LoginDto } from './dto/login.dto';
+import { JwtService } from '@nestjs/jwt';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
 
   constructor(
     @InjectModel(User.name)
-    private userModel: Model<User>
+    private userModel: Model<User>,
+
+    private jwtService: JwtService,
   ){}
 
    async create(createUserDto: CreateUserDto): Promise<User> {
@@ -60,7 +64,7 @@ export class AuthService {
 
     return {
       user: userResp,
-      token: 'ABC-123'
+      token: this.getJwToken({id: user.id}),
     };
 
   }
@@ -79,5 +83,10 @@ export class AuthService {
 
   remove(id: number) {
     return `This action removes a #${id} auth`;
+  }
+
+  getJwToken(payload: JwtPayload) {
+    const token = this.jwtService.sign(payload);
+    return token;
   }
 }
