@@ -1,19 +1,16 @@
 
 import { Injectable, BadRequestException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { JwtService } from '@nestjs/jwt';
 import { Model } from 'mongoose';
 
 import * as bcryptjs from "bcryptjs";
 
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { CreateUserDto, UpdateAuthDto, LoginDto, RegisterUserDto } from "./dto";
 
 import { User } from './entities/user.entity';
-import { LoginDto } from './dto/login.dto';
-import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { LoginResponse } from './interfaces/login-response.interface';
-import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -50,19 +47,15 @@ export class AuthService {
     }
   }
 
-  async register(registerDto: RegisterDto): Promise<LoginResponse> {
+  async register(registerDto: RegisterUserDto): Promise<LoginResponse> {
 
-    const {password, password2, email, name} = registerDto;
+    const user = await this.create(registerDto);
 
-    if(password !== password2) {
-      throw new BadRequestException(`The password must be the same!!`);
+    return {
+      user,
+      token: this.getJwToken({id: user._id}),
     }
-
-    await this.create({password, email, name});
-
-    return this.login({password, email});
     
-
   }
 
   async login(loginDto: LoginDto): Promise<LoginResponse> {
@@ -87,7 +80,13 @@ export class AuthService {
   }
 
   findAll() {
-    return `This action returns all auth`;
+    return this.userModel.find();
+  }
+
+  async findUserById(id: string): Promise<User> {
+    const user = await this.userModel.findById(id);
+    const {password, ...rest} = user.toJSON();
+    return rest;
   }
 
   findOne(id: number) {
@@ -106,4 +105,5 @@ export class AuthService {
     const token = this.jwtService.sign(payload);
     return token;
   }
+
 }
