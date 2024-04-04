@@ -12,6 +12,8 @@ import { User } from './entities/user.entity';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { LoginResponse } from './interfaces/login-response.interface';
+import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -48,7 +50,22 @@ export class AuthService {
     }
   }
 
-  async login(loginDto: LoginDto) {
+  async register(registerDto: RegisterDto): Promise<LoginResponse> {
+
+    const {password, password2, email, name} = registerDto;
+
+    if(password !== password2) {
+      throw new BadRequestException(`The password must be the same!!`);
+    }
+
+    await this.create({password, email, name});
+
+    return this.login({password, email});
+    
+
+  }
+
+  async login(loginDto: LoginDto): Promise<LoginResponse> {
     const {password, email} = loginDto
 
     const user = await this.userModel.findOne({email});
